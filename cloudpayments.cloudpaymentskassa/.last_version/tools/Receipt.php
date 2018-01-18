@@ -1,0 +1,33 @@
+<?php
+require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+\Bitrix\Main\Loader::includeModule("cloudpayments.cloudpaymentskassa");
+$post = \Bitrix\Main\Application::getInstance()->getContext()->getRequest()->getPostList()->toArray();
+$option=CCloudpaymentskassa::GetOptions(SITE_ID);
+if(CCloudpaymentskassa::CheckHMac($option['APIPASS'],$_SERVER)){
+    $data=\cloudpayments\CloudpaymentsKassa\CKassaTable::getList(array(
+       'filter'=>array('ORDER_ID'=>$post['InvoiceId'],'TYPE'=>$post['Type']),
+    ))->fetch();
+    $fields=array(
+        'LID'=>$data['LID'],
+        'ORDER_ID'=>$data['ORDER_ID'],
+        'PAY_ID'=>$data['PAY_ID'],
+        'STATUS'=>'Y',
+        'SUMMA'=>$data['SUMMA'],
+        'TYPE'=>$data['TYPE'],
+        'URLCHECK'=>$post['Url'],
+        'URLQRCODE'=>$post['QrCodeUrl'],
+        'DOCUMENT'=>$post['DocumentNumber'],
+        'TRANSACTION'=>'',
+        'DATACHECK'=>$post['DateTime'],
+        'ACCOUNTID'=>$post['AccountId'],
+        'INN'=>$post['Inn'],
+        'OFD'=>$post['Ofd'],
+        'SESSIONNUMBER'=>$post['SessionNumber'],
+        'FISCALSIGH'=>$post['FiscalSign'],
+        'DEVICENUMBER'=>$post['DeviceNumber'],
+        'REGNUMBER'=>$post['RegNumber'],
+    );
+    $k=\cloudpayments\CloudpaymentsKassa\CKassaTable::update($data['ID'],$fields);
+}
+echo json_encode(array('code'=>0));
+die();
