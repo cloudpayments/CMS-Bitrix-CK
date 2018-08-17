@@ -13,14 +13,14 @@
 
 ### Установка через bitrix marketplace
 
-Заходим на [страничку модуля](http://marketplace.1c-bitrix.ru/solutions/cloudpayments.cloudpaymentskassa/) в marketplace, нажимаем  "установить", указываем url сайта, нас перебросит на сайт. После чего нужно авторизоваться под админом, и скачать и установить модуль.
+Зайдите на [страничку модуля](http://marketplace.1c-bitrix.ru/solutions/cloudpayments.cloudpaymentskassa/) в marketplace, нажмите "установить", укажите url сайта. После чего нужно авторизуйтесь под админом, и скачайте и установите модуль.
 
 
 ### Ручная установка
 
-1.	Копируем архив с github. На ftp создаем папку /bitrix/modules/cloudpayments.cloudpaymentskassa/
-2.	В папку копируем все содержимое из архивной папки \cloudpayments.cloudpaymentskassa\.last_version\ 
-3.	Далее переходим в раздел установки решений c marketplace в админке /bitrix/admin/partner_modules.php?lang=ru. И жмем напротив скопированного модуля - установить. ![0](images/img2.png)
+1.	Скопируйте архив с github. На ftp создайте папку /bitrix/modules/cloudpayments.cloudpaymentskassa/
+2.	В папку скопируйте все содержимое из архивной папки \cloudpayments.cloudpaymentskassa\\.last_version\ 
+3.	Далее, перейдите в раздел установки решений c marketplace в админке /bitrix/admin/partner_modules.php?lang=ru. И нажмите напротив скопированного модуля - установить. ![0](images/img2.png)
 
 ### Настройка
   Моудль находится в меню "настройки" -> "модули" -> "Онлайн-касса CloudKassir"
