@@ -1,5 +1,5 @@
 <?
-$MESS["cloudpayments.cloudpaymentskassa_MODULE_NAME"] = "Îíëàéí-Êàññà CloudKassir (ÔÇ-54)";
-$MESS["cloudpayments.cloudpaymentskassa_MODULE_DESC"] = "Ìîäóëü ïîçâîëÿåò ïîñëå îïëàòû îòïðàâÿòü äàííûå íà îíëàéí-êààñó ñåðâèñà CloudPayments";
+$MESS["cloudpayments.cloudpaymentskassa_MODULE_NAME"] = "ÐžÐ½Ð»Ð°Ð¹Ð½-ÐšÐ°ÑÑÐ° CloudKassir (Ð¤Ð—-54)";
+$MESS["cloudpayments.cloudpaymentskassa_MODULE_DESC"] = "ÐœÐ¾Ð´ÑƒÐ»ÑŒ Ð¿Ð¾Ð·Ð²Ð¾Ð»ÑÐµÑ‚ Ð¿Ð¾ÑÐ»Ðµ Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹ Ð¾Ñ‚Ð¿Ñ€Ð°Ð²ÑÑ‚ÑŒ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð½Ð° Ð¾Ð½Ð»Ð°Ð¹Ð½-ÐºÐ°Ð°ÑÑƒ ÑÐµÑ€Ð²Ð¸ÑÐ° CloudPayments";
 $MESS["cloudpayments.cloudpaymentskassa_PARTNER_NAME"] = "Cloudpayments";
 $MESS["cloudpayments.cloudpaymentskassa_PARTNER_URI"] = "https://cloudpayments.ru/";
