@@ -131,6 +131,14 @@ if($POST_RIGHT>="R") :
                             </td>
                         </tr>
                         <tr>
+                            <td width="50%" class="adm-detail-content-cell-l">
+                               <?=Loc::getMessage('VBCH_CLDKASSA_SEND_POINTS')?>
+                            </td>
+                            <td width="50%" class="adm-detail-content-cell-r">
+                                <input type="checkbox" name="<?=$site?>[POINTS]" value="Y" <?if($SETTINGS['POINTS']=="Y") echo "checked='true'"?>/> <?=Loc::getMessage('VBCH_CLDKASSA_SEND_CHECK_POINTS')?>
+                            </td>
+                        </tr>
+                        <tr>
                             <td width="40%" class="adm-detail-content-cell-l">
                                 <label for="INN"><?=Loc::getMessage('VBCH_CLDKASSA_INN')?></label>
                             </td>
@@ -144,6 +152,14 @@ if($POST_RIGHT>="R") :
                             </td>
                             <td width="60%" class="adm-detail-content-cell-r">
                                 <?=SelectBoxMFromArray($site."[PAY_SYSTEM_ID][]", $PAYS,$SETTINGS["PAY_SYSTEM_ID"])?>
+                            </td>   
+                        </tr>
+                        <tr>
+                            <td width="40%" class="adm-detail-content-cell-l">
+                                <label for="PAY_SYSTEM_ID"><?=Loc::getMessage('VBCH_CLDKASSA_PAYMENT_OUT')?></label>
+                            </td>
+                            <td width="60%" class="adm-detail-content-cell-r">
+                                <?=SelectBoxFromArray($site."[PAY_SYSTEM_ID_OUT]", $PAYS,$SETTINGS["PAY_SYSTEM_ID_OUT"])?>
                             </td>
                         </tr>
                         <tr>
@@ -154,6 +170,45 @@ if($POST_RIGHT>="R") :
                                 <?=SelectBoxFromArray($site."[NALOG_TYPE]", $NALOGTYPE,$SETTINGS["NALOG_TYPE"])?>
                             </td>
                         </tr>
+                        
+                        
+                        <tr class="PAYSYSTEMBizValrow-with-value" style="display: table-row;">
+                        								<td colspan="2" style="
+                        									padding: 15px 15px 3px;
+                        									text-align: center; color: #4B6267;
+                        									font-weight: bold; border-bottom: 5px solid #E0E8EA;">
+                        									Выберите НДС на доставку, если необходимо								</td>
+                        </tr>
+                        <?
+                        $VAT_LIST['REFERENCE'][]=Loc::getMessage("DELIVERY_VAT1");    //18
+                        $VAT_LIST['REFERENCE_ID'][]=18;    //18
+                        
+                        $VAT_LIST['REFERENCE'][]=Loc::getMessage("DELIVERY_VAT2");  //10
+                        $VAT_LIST['REFERENCE_ID'][]=10;    //18
+                        
+                        $VAT_LIST['REFERENCE'][]=Loc::getMessage("DELIVERY_VAT3");   //0
+                        $VAT_LIST['REFERENCE_ID'][]=0;    //18
+                        
+                        $VAT_LIST['REFERENCE'][]=Loc::getMessage("DELIVERY_VAT4");   //110
+                        $VAT_LIST['REFERENCE_ID'][]=110;    //18
+                        
+                        $VAT_LIST['REFERENCE'][]=Loc::getMessage("DELIVERY_VAT5");   //118
+                        $VAT_LIST['REFERENCE_ID'][]=118;    //18
+                        $db_dtype = CSaleDelivery::GetList(array("SORT" => "ASC","NAME" => "ASC"),array("LID" => 's1',"ACTIVE" => "Y"),false,false,array());
+                        while ($ar_dtype = $db_dtype->Fetch())
+                        {
+                            ?>
+                            <tr>
+                                <td width="40%" class="adm-detail-content-cell-l">
+                                    <label for="VAT_DELIVERY<?=$ar_dtype['ID']?>"><?=$ar_dtype['NAME']?></label>
+                                </td>
+                                <td width="60%" class="adm-detail-content-cell-r">
+                                    <?=SelectBoxFromArray($site."[VAT_DELIVERY".$ar_dtype['ID']."]", $VAT_LIST,$SETTINGS["VAT_DELIVERY".$ar_dtype['ID']])?>
+                                </td>
+                            </tr>
+                            <?
+                        }
+                        ?>
                     </table>
                 <?endforeach;?>
                 <?$siteTabControl->End();?>

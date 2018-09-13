@@ -1,4 +1,5 @@
-<?
+<?  
+
 IncludeModuleLangFile(__FILE__);
 if (class_exists('cloudpayments_cloudpaymentskassa')) return;
 Class cloudpayments_cloudpaymentskassa extends CModule
@@ -13,7 +14,7 @@ Class cloudpayments_cloudpaymentskassa extends CModule
     var $strError = '';
 
     function __construct()
-    {
+    {   
         $arModuleVersion = array();
         include(dirname(__FILE__)."/version.php");
         $this->MODULE_VERSION = $arModuleVersion["VERSION"];

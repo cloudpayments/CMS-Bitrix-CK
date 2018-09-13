@@ -31,10 +31,6 @@ class CCloudpaymentskassa{
     }
     public function GetResult($order_ID,$TYPE){
         $data=array();
-        $data1=\cloudpayments\CloudpaymentsKassa\CKassaTable::getList(array(
-            'filter'=>array('ORDER_ID'=>$order_ID,'TYPE'=>$TYPE=='Y' ? 'Income' : 'IncomeReturn'),
-        ))->fetch();
-        if(!$data1){
             $order=\Bitrix\Sale\Order::load($order_ID);
             $option=self::GetOptions($order->getField("LID"));
             $basket = \Bitrix\Sale\Basket::loadItemsForOrder($order);
@@ -48,8 +44,46 @@ class CCloudpaymentskassa{
                     $data['PHONE']=current($prop['VALUE']);
                 }
             }
-
+            $total=0;
+            $POINTS=0;
+            
+            if(empty($option['PAY_SYSTEM_ID_OUT'])) $option['PAY_SYSTEM_ID_OUT']=9;
+            
+            $paymentCollection = $order->getPaymentCollection();
+            foreach ($paymentCollection as $payment)
+            {
+              if($payment->getPaymentSystemId()==$option['PAY_SYSTEM_ID_OUT'] && $payment->isPaid()):
+                $POINTS=$POINTS+$payment->getSum();    
+              endif;
+            }
+            
+            
+            
             $items=array();
+            foreach ($basketItems as $basketItem) {
+                $prD=\Bitrix\Catalog\ProductTable::getList(
+                    array(
+                        'filter'=>array('ID'=>$basketItem->getField('PRODUCT_ID')),
+                        'select'=>array('VAT_ID'),
+                    )
+                )->fetch();
+                $PRICE=$basketItem->getField('PRICE');
+                $total=$total+($PRICE*$basketItem->getQuantity());
+                
+            }
+            
+            //Добавляем доставку
+            if ($order->getDeliveryPrice() > 0 && $order->getField("DELIVERY_ID")) 
+            {
+                $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice();
+                $total=$total+$PRODUCT_PRICE_DELIVERY;
+            }
+            
+        /** Оплата баллам (внутренний счет покупателя) **/
+            if($total>0 && $POINTS>0 && $option['POINTS']!='Y'):
+              $PRICE_INDEX = 1-($POINTS/$total);
+            endif;
+            
             foreach ($basketItems as $basketItem) {
                 $prD=\Bitrix\Catalog\ProductTable::getList(
                     array(
@@ -67,36 +101,44 @@ class CCloudpaymentskassa{
                 }else{
                     $nds=null;
                 }
-                $number=number_format($basketItem->getField('PRICE'),2,".",'');
+
+                if($PRICE_INDEX>0 && $option['POINTS']!='Y') $PRICE=$basketItem->getField('PRICE')*$PRICE_INDEX;
+                else $PRICE=$basketItem->getField('PRICE');
+
+                $number=number_format($PRICE,2,".",'');
 
                 $items[]=array(
                     'label'=>$basketItem->getField('NAME'),
-                    'price'=>(float)$number,
+                    'price'=>(float)number_format($number,2,".",''),
                     'quantity'=>$basketItem->getQuantity(),
-                    'amount'=>(float)number_format(floatval($basketItem->getField('PRICE')*$basketItem->getQuantity()),2,".",''),
+                    'amount'=>(float)number_format($PRICE*$basketItem->getQuantity(),2,".",''),
                     'vat'=>$nds,
                 );
+                unset($PRICE);  
             }
             
 
             //Добавляем доставку
             if ($order->getDeliveryPrice() > 0 && $order->getField("DELIVERY_ID")) 
             {
-  
-                $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice(); 
+                if($PRICE_INDEX>0 && $order->getDeliveryPrice()>0 && $option['POINTS']!='Y') $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice()*$PRICE_INDEX;
+                else $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice(); 
+                
+                if ($option['VAT_DELIVERY'.$order->getField("DELIVERY_ID")]) $nds_delivery=$option['VAT_DELIVERY'.$order->getField("DELIVERY_ID")];
+                else $nds_delivery=$nds;
                 
                 $items[] = array(
                     'label' => Loc::getMessage('DELIVERY_TXT'),
-                    'price' => number_format($order->getDeliveryPrice(), 2, ".", ''),
+                    'price' => number_format($PRODUCT_PRICE_DELIVERY, 2, ".", ''),
                     'quantity' => 1,
                     'amount' => number_format($PRODUCT_PRICE_DELIVERY, 2, ".", ''),
-                    'vat' => $nds,  
+                    'vat' => $nds_delivery,  
                 );
                 unset($PRODUCT_PRICE_DELIVERY);
                 unset($PRODUCT_PRICE);
             }    
           
-            $paymentCollection = $order->getPaymentCollection();
+            
             $l = $paymentCollection[0];
             $payid=$l->getField("ID");
             $fl=$order->getPaymentCollection()->getPaidSum();
@@ -107,16 +149,19 @@ class CCloudpaymentskassa{
             $data['LID']=$order->getField("LID");
             $data['PAY_ID']=$payid;
             $data['SUMMA']=$fl;
-
+            $data['PRICE_INDEX']=$PRICE_INDEX;
+            $data['TOTAL']=$total;
+            $data['POINTS']=$POINTS;
+            
             self::SendData($data,$option);
-        }
+       //// }
 
     }
 
 
     function addError2($txt)
     {
-          $file = $_SERVER['DOCUMENT_ROOT'].'/cloud_log2.txt';
+          $file = $_SERVER['DOCUMENT_ROOT'].'/cloud_log3.txt';
           $current = file_get_contents($file);
           $current .= $txt."\n";
           file_put_contents($file, $current);
@@ -135,10 +180,26 @@ class CCloudpaymentskassa{
             'CustomerReceipt'=>array('Items'=>$data['ITEMS'],'taxationSystem'=>intval($option['NALOG_TYPE']),'email'=>$data['EMAIL'],'phone'=>$data['PHONE'] ? $data['PHONE'] : ''),
 
         );
+        
+        /** Оплата баллам (внутренний счет покупателя) **/
+        if ($option['POINTS']=='Y'):
+          $request['CustomerReceipt']["amounts"]=array(
+            "electronic"=>number_format($data['TOTAL']-$data['POINTS'], 2, ".", ''),
+    		    "advancePayment"=>0, 
+    		    "credit"=>0, 
+    		    "provision"=>number_format($data['POINTS'], 2, ".", '')
+          );
+        else:
+          $request['CustomerReceipt']["amounts"]=array(
+            "electronic"=>number_format($data['TOTAL']-$data['POINTS'], 2, ".", ''),
+    		    "advancePayment"=>0, 
+    		    "credit"=>0, 
+    		    "provision"=>0
+          );
+        endif;
+        
         $request=json_encode($request,JSON_UNESCAPED_UNICODE);
         $str=$data['TYPE'].$data['ORDER_ID'].$data['USER_ID'].$data['EMAIL'];
-        //if($data['TYPE']=='IncomeReturn')
-        // $str.=time();
         $reque=md5($str);
         $ch = curl_init(self::ACTIVE_URL);
         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
