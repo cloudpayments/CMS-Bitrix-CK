@@ -14,6 +14,7 @@ $MESS['VBCH_CLDKASSA_SEND_CHECK']=' Отправляем данные чека';
 $MESS['VBCH_CLDKASSA_SEND_CHECK_PHONE']='Телефон (СМС)';
 $MESS['VBCH_CLDKASSA_SEND_CHECK_EMAIL']='EMail';
 $MESS['VBCH_CLDKASSA_INN']='ИНН вашей организации или ИП, на который зарегистрирована касса';
+$MESS['VBCH_CLDKASSA_CALCPLACE']='Место осуществления расчетов. Адрес/адреса сайта точки продаж, для печати чека';
 $MESS['VBCH_CLDKASSA_PAYMENT']='Работать с платежными системами';
 $MESS['VBCH_CLDKASSA_NALOG']='Cистема налогообложения должна совпадать с одним из вариантов, зарегистрированных в ККТ';
 
@@ -26,3 +27,19 @@ $MESS["DELIVERY_VAT3"]="НДС 0%";
 $MESS["DELIVERY_VAT4"]="расчетный НДС 10/110";
 $MESS["DELIVERY_VAT5"]="расчетный НДС 18/118";
 $MESS["VBCH_CLDKASSA_DELIVERY_NDS"]="Нд для доставки";
+
+$MESS['VBCH_CLDKASSA_TEXT1'] = "ФЗ-54";
+$MESS['VBCH_CLDKASSA_TEXT2'] = "Признак способа расчета";
+$MESS['VBCH_CLDKASSA_TEXT3'] = "неизвестный способ расчета";
+$MESS['VBCH_CLDKASSA_TEXT4'] = "предоплата 100%";
+$MESS['VBCH_CLDKASSA_TEXT5'] = "предоплата";
+$MESS['VBCH_CLDKASSA_TEXT6'] = "аванс";
+$MESS['VBCH_CLDKASSA_TEXT7'] = "полный расчёт";
+
+$MESS['VBCH_CLDKASSA_TEXT8'] = "Признак предмета расчета";
+$MESS['VBCH_CLDKASSA_TEXT9'] = "неизвестный предмет оплаты";
+$MESS['VBCH_CLDKASSA_TEXT10'] = "товар";
+$MESS['VBCH_CLDKASSA_TEXT11'] = "подакцизный товар";
+$MESS['VBCH_CLDKASSA_TEXT12'] = "работа";
+$MESS['VBCH_CLDKASSA_TEXT13'] = "услуга";
+$MESS['VBCH_CLDKASSA_TEXT14'] = "Статус для отправки отдельного чека";

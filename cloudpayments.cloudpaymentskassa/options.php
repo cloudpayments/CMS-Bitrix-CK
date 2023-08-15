@@ -49,6 +49,9 @@ if($POST_RIGHT>="R") :
         else{
             $Update = $Update.$Apply;
             Option::set($module_id, "use_on_sites", serialize($_POST["use_on_sites"]));
+            Option::set($module_id, "SPOSOB_RASCHETA1", $_POST["SPOSOB_RASCHETA1"]);
+            Option::set($module_id, "PREDMET_RASCHETA1", $_POST["PREDMET_RASCHETA1"]);
+            Option::set($module_id, "STATUS_TWOCHECK", $_POST["STATUS_TWOCHECK"]);
             foreach($arSiteList as $site):
                 $params=$_POST[$site];
                 Option::set($module_id,'SETTINGS',serialize($params),$site);
@@ -72,6 +75,14 @@ if($POST_RIGHT>="R") :
             LocalRedirect($APPLICATION->GetCurPage()."?mid=".urlencode($module_id)."&lang=".urlencode(LANGUAGE_ID)."&".$tabControl->ActiveTabParam());
         }
     }
+	$SPOSOB_RASCHETA1 = Option::get($module_id, "SPOSOB_RASCHETA1", "");
+	$PREDMET_RASCHETA1 = Option::get($module_id, "PREDMET_RASCHETA1", "");
+	$STATUS_TWOCHECK = Option::get($module_id, "STATUS_TWOCHECK", "");
+	
+	$db_dtype = CSaleStatus::GetList(array());
+	while ($ar_dtype = $db_dtype->Fetch()) {
+		$STATUS_ALL[$ar_dtype['ID']] = $ar_dtype['NAME'];
+	}
     $tabControl->Begin();?>
     <form method="post" id="frm" name="frm" action="<?echo $APPLICATION->GetCurPage()?>?mid=<?=urlencode($module_id)?>&amp;lang=<?=LANGUAGE_ID?>">
         <?$tabControl->BeginNextTab();?>
@@ -146,13 +157,21 @@ if($POST_RIGHT>="R") :
                                 <input type="text" size="30" name="<?=$site?>[INN]" value="<?=$SETTINGS['INN']?>"/>
                             </td>
                         </tr>
+                      <tr>
+                        <td width = "40%" class = "adm-detail-content-cell-l">
+                          <label for = "CALCPLACE"><?= Loc::getMessage('VBCH_CLDKASSA_CALCPLACE') ?></label>
+                        </td>
+                        <td width = "60%" class = "adm-detail-content-cell-r">
+                          <input type = "text" size = "30" name = "<?= $site ?>[CALCPLACE]" value = "<?= $SETTINGS['CALCPLACE'] ?>"/>
+                        </td>
+                      </tr>
                         <tr>
                             <td width="40%" class="adm-detail-content-cell-l">
                                 <label for="PAY_SYSTEM_ID"><?=Loc::getMessage('VBCH_CLDKASSA_PAYMENT')?></label>
                             </td>
                             <td width="60%" class="adm-detail-content-cell-r">
                                 <?=SelectBoxMFromArray($site."[PAY_SYSTEM_ID][]", $PAYS,$SETTINGS["PAY_SYSTEM_ID"])?>
-                            </td>   
+                            </td>
                         </tr>
                         <tr>
                             <td width="40%" class="adm-detail-content-cell-l">
@@ -170,6 +189,7 @@ if($POST_RIGHT>="R") :
                                 <?=SelectBoxFromArray($site."[NALOG_TYPE]", $NALOGTYPE,$SETTINGS["NALOG_TYPE"])?>
                             </td>
                         </tr>
+                      
                         
                         
                         <tr class="PAYSYSTEMBizValrow-with-value" style="display: table-row;">
@@ -209,6 +229,56 @@ if($POST_RIGHT>="R") :
                             <?
                         }
                         ?>
+                      <tr>
+                        <td><?= Loc::getMessage("VBCH_CLDKASSA_TEXT14") ?></td>
+                        <td>
+                          <select name = "STATUS_TWOCHECK">
+                            <option value = ""></option>
+														<? foreach ($STATUS_ALL as $st_id=>$st_val):?>
+                              <option <?if($STATUS_TWOCHECK == $st_id):?>selected<?endif;?> value = "<?=$st_id?>"><?= $st_val?></option>
+														<? endforeach; ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan = "2" style = "padding: 15px 15px 3px;text-align: center; color: #4B6267;font-weight: bold; border-bottom: 5px solid #E0E8EA;"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT1") ?></td>
+                      </tr>
+                      <tr>
+                        <td><?= Loc::getMessage("VBCH_CLDKASSA_TEXT2") ?></td>
+                        <td>
+                          <select name = "SPOSOB_RASCHETA1">
+                            <option value = ""></option>
+                            <option <? if ($SPOSOB_RASCHETA1 == "0"): ?>selected<? endif;
+														?> value = "0"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT3") ?></option>
+                            <option <? if ($SPOSOB_RASCHETA1 == "1"): ?>selected<? endif;
+														?> value = "1"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT4") ?></option>
+                            <option <? if ($SPOSOB_RASCHETA1 == "2"): ?>selected<? endif;
+														?> value = "2"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT5") ?></option>
+                            <option <? if ($SPOSOB_RASCHETA1 == "3"): ?>selected<? endif;
+														?> value = "3"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT6") ?></option>
+                            <option <? if ($SPOSOB_RASCHETA1 == "4"): ?>selected<? endif;
+														?> value = "4"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT7") ?></option>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><?= Loc::getMessage("VBCH_CLDKASSA_TEXT8") ?></td>
+                        <td>
+                          <select name = "PREDMET_RASCHETA1">
+                            <option value = ""></option>
+                            <option <? if ($PREDMET_RASCHETA1 == "0"): ?>selected<? endif;
+														?> value = "0"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT9") ?></option>
+                            <option <? if ($PREDMET_RASCHETA1 == "1"): ?>selected<? endif;
+														?> value = "1"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT10") ?></option>
+                            <option <? if ($PREDMET_RASCHETA1 == "2"): ?>selected<? endif;
+														?> value = "2"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT11") ?></option>
+                            <option <? if ($PREDMET_RASCHETA1 == "3"): ?>selected<? endif;
+														?> value = "3"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT12") ?></option>
+                            <option <? if ($PREDMET_RASCHETA1 == "4"): ?>selected<? endif;
+														?> value = "4"><?= Loc::getMessage("VBCH_CLDKASSA_TEXT13") ?></option>
+                          </select>
+                        </td>
+                      </tr>
                     </table>
                 <?endforeach;?>
                 <?$siteTabControl->End();?>

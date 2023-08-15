@@ -1,4 +1,4 @@
-<?  
+<?
 
 IncludeModuleLangFile(__FILE__);
 if (class_exists('cloudpayments_cloudpaymentskassa')) return;
@@ -14,7 +14,7 @@ Class cloudpayments_cloudpaymentskassa extends CModule
     var $strError = '';
 
     function __construct()
-    {   
+    {
         $arModuleVersion = array();
         include(dirname(__FILE__)."/version.php");
         $this->MODULE_VERSION = $arModuleVersion["VERSION"];
@@ -58,7 +58,7 @@ Class cloudpayments_cloudpaymentskassa extends CModule
         $eventManager = \Bitrix\Main\EventManager::getInstance();
         $eventManager->registerEventHandler("sale", "OnSaleOrderPaid", $this->MODULE_ID, "CCloudpaymentskassa", "OnSaleOrderPaid",9999);
         $eventManager->registerEventHandler("main", "OnAdminContextMenuShow", $this->MODULE_ID, "CCloudpaymentskassa", "OnAdminContextMenuShowHandler",9999);
-
+				$eventManager->registerEventHandler("sale", "OnSaleStatusOrder", $this->MODULE_ID, "CCloudpaymentskassa", "OnCloudpaymentKassaStatusUpdate",9999);
 
 
         return true;
@@ -69,6 +69,7 @@ Class cloudpayments_cloudpaymentskassa extends CModule
         $eventManager = \Bitrix\Main\EventManager::getInstance();
         $eventManager->unRegisterEventHandler("sale", "OnAfterIBlockElementUpdate", $this->MODULE_ID, "CCloudpaymentskassa", "OnSaleOrderPaid");
         $eventManager->unRegisterEventHandler("main", "OnAdminContextMenuShow", $this->MODULE_ID, "CCloudpaymentskassa", "OnAdminContextMenuShowHandler",9999);
+				$eventManager->unRegisterEventHandler("sale", "OnSaleStatusOrder", $this->MODULE_ID, "CCloudpaymentskassa", "OnCloudpaymentKassaStatusUpdate",9999);
         return true;
     }
 

@@ -1,13 +1,16 @@
 <?
 use \Bitrix\Main\Localization\Loc;
 use \Bitrix\Main\Web\HttpClient;
-use \cloudpayments\CloudpaymentsKassa;
+use \Bitrix\Main\Config\Option;
+use \Bitrix\Sale\Order;
+use \Bitrix\Main\Application;
+use \Bitrix\Main\Loader;
+use \cloudpayments\CloudpaymentsKassa\CKassaTable;
+
 $arClassesList = array(
     "cloudpayments\\CloudpaymentsKassa\\CKassaTable"					=> "lib/CKassa.php",
 );
-\Bitrix\Main\Loader::registerAutoLoadClasses("cloudpayments.cloudpaymentskassa",$arClassesList);
-
-
+Loader::registerAutoLoadClasses("cloudpayments.cloudpaymentskassa",$arClassesList);
 Loc::loadMessages(__FILE__);
 class CCloudpaymentskassa{
     const MODULE_ID="cloudpayments.cloudpaymentskassa";
@@ -15,7 +18,7 @@ class CCloudpaymentskassa{
     const ACTIVE_URL="https://api.cloudpayments.ru/kkt/receipt";
 
     public static function GetOptions($site){
-        return unserialize(\Bitrix\Main\Config\Option::get(self::MODULE_ID,'SETTINGS',"",$site));
+        return unserialize(Option::get(self::MODULE_ID,'SETTINGS',"",$site));
     }
 
     public static function OnSaleOrderPaid($ENTITY){
@@ -32,9 +35,9 @@ class CCloudpaymentskassa{
     }
     public static function GetResult($order_ID,$TYPE){
         $data=array();
-            $order=\Bitrix\Sale\Order::load($order_ID);
-            $option=self::GetOptions($order->getField("LID"));
-            $basket = \Bitrix\Sale\Basket::loadItemsForOrder($order);
+            $order= Order::load($order_ID);
+            $option= self::GetOptions($order->getField("LID"));
+            $basket = $order->getBusket();
             $basketItems = $basket->getBasketItems();
             $Property=$order->getPropertyCollection()->getArray();
             foreach($Property['properties'] as $prop){
@@ -54,11 +57,9 @@ class CCloudpaymentskassa{
             foreach ($paymentCollection as $payment)
             {
               if($payment->getPaymentSystemId()==$option['PAY_SYSTEM_ID_OUT'] && $payment->isPaid()):
-                $POINTS=$POINTS+$payment->getSum();    
+                $POINTS=$POINTS+$payment->getSum();
               endif;
             }
-            
-            
             
             $items=array();
             foreach ($basketItems as $basketItem) {
@@ -74,7 +75,7 @@ class CCloudpaymentskassa{
             }
             
             //Добавляем доставку
-            if ($order->getDeliveryPrice() > 0 && $order->getField("DELIVERY_ID")) 
+            if ($order->getDeliveryPrice() > 0 && $order->getField("DELIVERY_ID"))
             {
                 $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice();
                 $total=$total+$PRODUCT_PRICE_DELIVERY;
@@ -84,6 +85,9 @@ class CCloudpaymentskassa{
             if($total>0 && $POINTS>0 && $option['POINTS']!='Y'):
               $PRICE_INDEX = 1-($POINTS/$total);
             endif;
+            
+            $object = Option::get("cloudpayments.cloudpaymentskassa", "PREDMET_RASCHETA1", "") ?: 0;
+            $method = Option::get("cloudpayments.cloudpaymentskassa", "SPOSOB_RASCHETA1", "") ?: 0;
             
             foreach ($basketItems as $basketItem) {
                 $prD=\Bitrix\Catalog\ProductTable::getList(
@@ -102,42 +106,32 @@ class CCloudpaymentskassa{
                 }else{
                     $nds=null;
                 }
-
-                if($PRICE_INDEX>0 && $option['POINTS']!='Y') $PRICE=$basketItem->getField('PRICE')*$PRICE_INDEX;
-                else $PRICE=$basketItem->getField('PRICE');
-
-                $number=number_format($PRICE,2,".",'');
-
+                
                 $items[]=array(
                     'label'=>$basketItem->getField('NAME'),
-                    'price'=>(float)number_format($number,2,".",''),
+                    'price'=>(float)number_format($basketItem->getField('PRICE'),2,".",''),
                     'quantity'=>$basketItem->getQuantity(),
-                    'amount'=>(float)number_format($PRICE*$basketItem->getQuantity(),2,".",''),
+                    'amount'=>(float)number_format($basketItem->getField('PRICE')*$basketItem->getQuantity(),2,".",''),
                     'vat'=>$nds,
+                    "object" => $object,
+                    "method" => $method
                 );
-                unset($PRICE);  
+                unset($PRICE);
             }
             
 
             //Добавляем доставку
-            if ($order->getDeliveryPrice() > 0 && $order->getField("DELIVERY_ID")) 
-            {
-                if($PRICE_INDEX>0 && $order->getDeliveryPrice()>0 && $option['POINTS']!='Y') $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice()*$PRICE_INDEX;
-                else $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice(); 
-                
-                if ($option['VAT_DELIVERY'.$order->getField("DELIVERY_ID")]) $nds_delivery=$option['VAT_DELIVERY'.$order->getField("DELIVERY_ID")];
-                else $nds_delivery=$nds;
-                
-                $items[] = array(
-                    'label' => Loc::getMessage('DELIVERY_TXT'),
-                    'price' => number_format($PRODUCT_PRICE_DELIVERY, 2, ".", ''),
-                    'quantity' => 1,
-                    'amount' => number_format($PRODUCT_PRICE_DELIVERY, 2, ".", ''),
-                    'vat' => $nds_delivery,  
-                );
-                unset($PRODUCT_PRICE_DELIVERY);
-                unset($PRODUCT_PRICE);
-            }    
+            if($order->getDeliveryPrice() > 0 and $order->getField("DELIVERY_ID")) {
+              $items[] = array(
+                'label' => GetMessage("DELIVERY_TXT"),
+                'price' => number_format($order->getDeliveryPrice(), 2, ".", ''),
+                'quantity' => 1,
+                'amount' => number_format($order->getDeliveryPrice(), 2, ".", ''),
+                'vat' => $option['VAT_DELIVERY'.$order->getField("DELIVERY_ID")] ?: NULL,
+                'object' => "4",
+                'method' => $method,
+              );
+            }
           
             
             $l = $paymentCollection[0];
@@ -155,22 +149,25 @@ class CCloudpaymentskassa{
             $data['POINTS']=$POINTS;
             
             self::SendData($data,$option);
-       //// }
-
     }
 
 
-    function addError2($txt)
-    {
-          $file = $_SERVER['DOCUMENT_ROOT'].'/cloud_log3.txt';
-          $current = file_get_contents($file);
-          $current .= $txt."\n";
-          file_put_contents($file, $current);
-    }
+  public static function OnCloudpaymentKassaStatusUpdate($ORDER_ID, $STATUS_ID)
+  {
+    if (empty($ORDER_ID))
+      return;
     
+    $STATUS_TWOCHECK = Option::get("cloudpayments.cloudpaymentskassa", "STATUS_TWOCHECK", "");
+    
+    if (empty($STATUS_TWOCHECK))
+      return;
+    
+    if($STATUS_ID == $STATUS_TWOCHECK)
+      self::GetResult($ORDER_ID, "Y",4);
+    
+  }
 
-    public static function SendData($data,$option){
-        $request=array();
+  public static function SendData($data,$option){
         $error='';
 
         $request=array(
@@ -178,7 +175,7 @@ class CCloudpaymentskassa{
             'InvoiceId'=>$data['ORDER_ID'],
             'AccountId'=>$data['USER_ID'],
             'Type'=>$data['TYPE'],
-            'CustomerReceipt'=>array('Items'=>$data['ITEMS'],'taxationSystem'=>intval($option['NALOG_TYPE']),'email'=>$data['EMAIL'],'phone'=>$data['PHONE'] ? $data['PHONE'] : ''),
+            'CustomerReceipt'=>array('Items'=>$data['ITEMS'],'calculationPlace' => strval($option['CALCPLACE']),'taxationSystem'=>intval($option['NALOG_TYPE']),'email'=>$data['EMAIL'],'phone'=>$data['PHONE'] ?: ''),
 
         );
         
@@ -201,10 +198,10 @@ class CCloudpaymentskassa{
         
         $request=json_encode($request,JSON_UNESCAPED_UNICODE);
         $str=$data['TYPE'].$data['ORDER_ID'].$data['USER_ID'].$data['EMAIL'];
-        $reque=md5($str);
+        
         $httpClient = new HttpClient();
         $httpClient->setHeader('Content-Type', 'application/json', true);
-        $httpClient->setHeader('X-Request-ID', $reque, true);
+        $httpClient->setHeader('X-Request-ID', md5($str), true);
         $httpClient->setAuthorization(trim($option['APIKEY']), trim($option['APIPSW']));
         $content = $httpClient->post(self::ACTIVE_URL, $request);
         $out=self::Object_to_array(json_decode($content));
@@ -217,7 +214,7 @@ class CCloudpaymentskassa{
                 'SUMMA'=>$data['SUMMA'],
                 'TYPE'=>$data['TYPE'],
             );
-            \cloudpayments\CloudpaymentsKassa\CKassaTable::add($fields);
+            CKassaTable::add($fields);
         }else{
             $error .= $out['Message'];
         }
@@ -252,67 +249,58 @@ class CCloudpaymentskassa{
 
     }
     public static function detallheaders($server){
-        if (!is_array($server)) {
+        if (!is_array($server))
             return array();
-        }
+        
         $headers = array();
-        foreach ($server as $name => $value) {
-            if (substr($name, 0, 5) == 'HTTP_') {
+        foreach ($server as $name => $value)
+            if (substr($name, 0, 5) == 'HTTP_')
                 $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
-            }
-        }
+        
         return $headers;
     }
 
     public static function OnAdminContextMenuShowHandler(&$items) {
-        $income=true;$ReFund=true;
-        if ($GLOBALS['APPLICATION']->GetCurPage()=='/bitrix/admin/sale_order_view.php' || $GLOBALS['APPLICATION']->GetCurPage()=='/bitrix/admin/sale_order_edit.php') {
-            if (array_key_exists('ID', $_REQUEST) && $_REQUEST['ID']>0 && \Bitrix\Main\Loader::includeModule('sale')) {
-                $post = \Bitrix\Main\Application::getInstance()->getContext()->getRequest()->getQueryList()->toArray();
-                $order=\Bitrix\Sale\Order::load($_REQUEST['ID']);
-                $TYPE=$order->isPaid() ? 'Y' : "N";
-                $res=\cloudpayments\CloudpaymentsKassa\CKassaTable::getList(array(
-                    'filter'=>array('ORDER_ID'=>$_REQUEST['ID'],'LID'=>$order->getField("LID")),
-                    'select'=>array("ID","TYPE"),
-                ))->fetchAll();
-                foreach($res as $r){
-                    if($r['TYPE']=='Income'){
-                        $income=false; $ReFund=true;
-                    }
-                    if($r['TYPE']=='IncomeReturn'){
-                        $ReFund=false;$income=true;
-                    }
-                }
-                if ($post["itr_cld_pay"] == "y" && check_bitrix_sessid())
-                {
-                    self::GetResult($_REQUEST['ID'],'Y');
+        if (
+          $GLOBALS['APPLICATION']->GetCurPage() !='/bitrix/admin/sale_order_view.php' or
+          $GLOBALS['APPLICATION']->GetCurPage() !='/bitrix/admin/sale_order_edit.php'
+        ) return;
 
-                }elseif($post["itr_cld_refund"] == "y" && check_bitrix_sessid()){
-                    self::GetResult($_REQUEST['ID'],'N');
-                }
-                $newItem = array(
-                    'TEXT' =>Loc::getMessage('VBCH_CLD_KASSA_ORDER_BUTTON'),
-                    'TITLE' =>Loc::getMessage('VBCH_CLD_KASSA_ORDER_BUTTON_DESC'),
-                    'LINK' => '#',
-                    'ICON' => 'btn_settings',
-                    'MENU' => array(),
-                );
-              //  if($income && !$ReFund)
-                $newItem['MENU'][]=array('ICON' => '',
-                            'TEXT' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK'),
-                            'TITLE' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK'),
-                            'LINK' => $GLOBALS['APPLICATION']->GetCurPageParam('itr_cld_pay=y&'.bitrix_sessid_get(), array('itr_cld_pay','itr_cld_refund', 'sessid')),
-                        );
-//                if($ReFund && !$income)
-                $newItem['MENU'][] = array('ICON' => '',
-                            'TEXT' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK_REFUND'),
-                            'TITLE' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK_REFUND'),
-                            'LINK' => $GLOBALS['APPLICATION']->GetCurPageParam('itr_cld_refund=y&'.bitrix_sessid_get(), array('itr_cld_pay','itr_cld_refund', 'sessid')),
-                        );
-                    $items[]=$newItem;
+        if (
+          array_key_exists('ID', $_REQUEST) and
+          $_REQUEST['ID']>0 && Loader::includeModule('sale')
+        ) {
+            $post = Application::getInstance()->getContext()->getRequest()->getQueryList()->toArray();
+            $order = Order::load($_REQUEST['ID']);
+            
+            if ($post["itr_cld_pay"] == "y" && check_bitrix_sessid())
+              self::GetResult($_REQUEST['ID'],'Y');
+            elseif($post["itr_cld_refund"] == "y" && check_bitrix_sessid())
+                self::GetResult($_REQUEST['ID'],'N');
+            
+            $newItem = array(
+                'TEXT' =>Loc::getMessage('VBCH_CLD_KASSA_ORDER_BUTTON'),
+                'TITLE' =>Loc::getMessage('VBCH_CLD_KASSA_ORDER_BUTTON_DESC'),
+                'LINK' => '#',
+                'ICON' => 'btn_settings',
+                'MENU' => array(),
+            );
+          
+            $newItem['MENU'][]=array('ICON' => '',
+                        'TEXT' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK'),
+                        'TITLE' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK'),
+                        'LINK' => $GLOBALS['APPLICATION']->GetCurPageParam('itr_cld_pay=y&'.bitrix_sessid_get(), array('itr_cld_pay','itr_cld_refund', 'sessid')),
+                    );
 
-                }
+            $newItem['MENU'][] = array('ICON' => '',
+                        'TEXT' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK_REFUND'),
+                        'TITLE' => Loc::getMessage('VBCH_CLD_KASSA_ORDER_CREATE_CHECK_REFUND'),
+                        'LINK' => $GLOBALS['APPLICATION']->GetCurPageParam('itr_cld_refund=y&'.bitrix_sessid_get(), array('itr_cld_pay','itr_cld_refund', 'sessid')),
+                    );
+            
+            $items[]=$newItem;
             }
         }
+        
 
 }
