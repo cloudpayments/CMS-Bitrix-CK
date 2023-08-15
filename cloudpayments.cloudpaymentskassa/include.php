@@ -1,5 +1,6 @@
 <?
 use \Bitrix\Main\Localization\Loc;
+use \Bitrix\Main\Web\HttpClient;
 use \cloudpayments\CloudpaymentsKassa;
 $arClassesList = array(
     "cloudpayments\\CloudpaymentsKassa\\CKassaTable"					=> "lib/CKassa.php",
@@ -13,11 +14,11 @@ class CCloudpaymentskassa{
 
     const ACTIVE_URL="https://api.cloudpayments.ru/kkt/receipt";
 
-    public function GetOptions($site){
+    public static function GetOptions($site){
         return unserialize(\Bitrix\Main\Config\Option::get(self::MODULE_ID,'SETTINGS',"",$site));
     }
 
-    public function OnSaleOrderPaid($ENTITY){
+    public static function OnSaleOrderPaid($ENTITY){
         $order=$ENTITY->getParameter('ENTITY');
         $arFields=array(
             'PAY_ID'=>$order->getField('ID'),
@@ -29,7 +30,7 @@ class CCloudpaymentskassa{
             self::GetResult($order->getField('ID'),$arFields['VALUE']);
         }
     }
-    public function GetResult($order_ID,$TYPE){
+    public static function GetResult($order_ID,$TYPE){
         $data=array();
             $order=\Bitrix\Sale\Order::load($order_ID);
             $option=self::GetOptions($order->getField("LID"));
@@ -72,14 +73,14 @@ class CCloudpaymentskassa{
                 
             }
             
-            //Äîáàâëÿåì äîñòàâêó
+            //Ð”Ð¾Ð±Ð°Ð²Ð»ÑÐµÐ¼ Ð´Ð¾ÑÑ‚Ð°Ð²ÐºÑƒ
             if ($order->getDeliveryPrice() > 0 && $order->getField("DELIVERY_ID")) 
             {
                 $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice();
                 $total=$total+$PRODUCT_PRICE_DELIVERY;
             }
             
-        /** Îïëàòà áàëëàì (âíóòðåííèé ñ÷åò ïîêóïàòåëÿ) **/
+        /** ÐžÐ¿Ð»Ð°Ñ‚Ð° Ð±Ð°Ð»Ð»Ð°Ð¼ (Ð²Ð½ÑƒÑ‚Ñ€ÐµÐ½Ð½Ð¸Ð¹ ÑÑ‡ÐµÑ‚ Ð¿Ð¾ÐºÑƒÐ¿Ð°Ñ‚ÐµÐ»Ñ) **/
             if($total>0 && $POINTS>0 && $option['POINTS']!='Y'):
               $PRICE_INDEX = 1-($POINTS/$total);
             endif;
@@ -118,7 +119,7 @@ class CCloudpaymentskassa{
             }
             
 
-            //Äîáàâëÿåì äîñòàâêó
+            //Ð”Ð¾Ð±Ð°Ð²Ð»ÑÐµÐ¼ Ð´Ð¾ÑÑ‚Ð°Ð²ÐºÑƒ
             if ($order->getDeliveryPrice() > 0 && $order->getField("DELIVERY_ID")) 
             {
                 if($PRICE_INDEX>0 && $order->getDeliveryPrice()>0 && $option['POINTS']!='Y') $PRODUCT_PRICE_DELIVERY=$order->getDeliveryPrice()*$PRICE_INDEX;
@@ -168,7 +169,7 @@ class CCloudpaymentskassa{
     }
     
 
-    public function SendData($data,$option){
+    public static function SendData($data,$option){
         $request=array();
         $error='';
 
@@ -181,7 +182,7 @@ class CCloudpaymentskassa{
 
         );
         
-        /** Îïëàòà áàëëàì (âíóòðåííèé ñ÷åò ïîêóïàòåëÿ) **/
+        /** ÐžÐ¿Ð»Ð°Ñ‚Ð° Ð±Ð°Ð»Ð»Ð°Ð¼ (Ð²Ð½ÑƒÑ‚Ñ€ÐµÐ½Ð½Ð¸Ð¹ ÑÑ‡ÐµÑ‚ Ð¿Ð¾ÐºÑƒÐ¿Ð°Ñ‚ÐµÐ»Ñ) **/
         if ($option['POINTS']=='Y'):
           $request['CustomerReceipt']["amounts"]=array(
             "electronic"=>number_format($data['TOTAL']-$data['POINTS'], 2, ".", ''),
@@ -201,17 +202,11 @@ class CCloudpaymentskassa{
         $request=json_encode($request,JSON_UNESCAPED_UNICODE);
         $str=$data['TYPE'].$data['ORDER_ID'].$data['USER_ID'].$data['EMAIL'];
         $reque=md5($str);
-        $ch = curl_init(self::ACTIVE_URL);
-        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        curl_setopt($ch,CURLOPT_USERPWD,trim($option['APIKEY']).":".trim($option['APIPSW']));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json","X-Request-ID:".$reque));
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
-        $content = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
+        $httpClient = new HttpClient();
+        $httpClient->setHeader('Content-Type', 'application/json', true);
+        $httpClient->setHeader('X-Request-ID', $reque, true);
+        $httpClient->setAuthorization(trim($option['APIKEY']), trim($option['APIPSW']));
+        $content = $httpClient->post(self::ACTIVE_URL, $request);
         $out=self::Object_to_array(json_decode($content));
         if ($out['Success'] !== false){
             $fields=array(
@@ -228,7 +223,7 @@ class CCloudpaymentskassa{
         }
 
     }
-    private function Object_to_array($data)
+    public static function Object_to_array($data)
     {
         if (is_array($data) || is_object($data))
         {
@@ -243,7 +238,7 @@ class CCloudpaymentskassa{
     }
 
 
-    public function CheckHMac($APIPASS,$server){
+    public static function CheckHMac($APIPASS,$server){
 
         $headers = self::detallheaders($server);
         if (!((!isset($headers['Content-HMAC'])) and (!isset($headers['Content-Hmac'])))) {
@@ -256,7 +251,7 @@ class CCloudpaymentskassa{
 
 
     }
-    private function detallheaders($server){
+    public static function detallheaders($server){
         if (!is_array($server)) {
             return array();
         }

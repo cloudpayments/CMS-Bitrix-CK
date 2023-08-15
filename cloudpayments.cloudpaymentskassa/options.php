@@ -177,7 +177,7 @@ if($POST_RIGHT>="R") :
                         									padding: 15px 15px 3px;
                         									text-align: center; color: #4B6267;
                         									font-weight: bold; border-bottom: 5px solid #E0E8EA;">
-                        									Выберите НДС на доставку, если необходимо								</td>
+                        									Р’С‹Р±РµСЂРёС‚Рµ РќР”РЎ РЅР° РґРѕСЃС‚Р°РІРєСѓ, РµСЃР»Рё РЅРµРѕР±С…РѕРґРёРјРѕ								</td>
                         </tr>
                         <?
                         $VAT_LIST['REFERENCE'][]=Loc::getMessage("DELIVERY_VAT1");    //18

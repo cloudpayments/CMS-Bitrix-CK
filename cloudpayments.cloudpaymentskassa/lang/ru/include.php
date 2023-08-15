@@ -1,6 +1,6 @@
 <?
-$MESS['VBCH_CLD_KASSA_ORDER_BUTTON']='Îíëàéí-Êàññà CloudPayments';
-$MESS['VBCH_CLD_KASSA_ORDER_BUTTON_DESC']='Ïåðåäà÷à äàííûõ íà îíëàéí-êàññó CloudPayments';
-$MESS['VBCH_CLD_KASSA_ORDER_CREATE_CHECK']='Ñîçäàòü îíëàéí-÷åê';
-$MESS['VBCH_CLD_KASSA_ORDER_CREATE_CHECK_REFUND']='Ñîçäàòü âîçâðàò ñ îíëàéí-÷åêîì';
-$MESS["DELIVERY_TXT"]='Äîñòàâêà';
+$MESS['VBCH_CLD_KASSA_ORDER_BUTTON']='ÐžÐ½Ð»Ð°Ð¹Ð½-ÐšÐ°ÑÑÐ° CloudPayments';
+$MESS['VBCH_CLD_KASSA_ORDER_BUTTON_DESC']='ÐŸÐµÑ€ÐµÐ´Ð°Ñ‡Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð½Ð° Ð¾Ð½Ð»Ð°Ð¹Ð½-ÐºÐ°ÑÑÑƒ CloudPayments';
+$MESS['VBCH_CLD_KASSA_ORDER_CREATE_CHECK']='Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ð¾Ð½Ð»Ð°Ð¹Ð½-Ñ‡ÐµÐº';
+$MESS['VBCH_CLD_KASSA_ORDER_CREATE_CHECK_REFUND']='Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‚ Ñ Ð¾Ð½Ð»Ð°Ð¹Ð½-Ñ‡ÐµÐºÐ¾Ð¼';
+$MESS["DELIVERY_TXT"]='Ð”Ð¾ÑÑ‚Ð°Ð²ÐºÐ°';
