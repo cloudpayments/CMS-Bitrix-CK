@@ -40,3 +40,10 @@
 `ваш.сайт/bitrix/tools/cloudpayments.cloudpaymentskassa/Receipt.php`
 
 Для работы модуля необходим curl.
+
+### Changelog
+
+**1.0.2**
+
+- Поддержка PHP8
+- Внедрение классов D7 в структуру модуля
